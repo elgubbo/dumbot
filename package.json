@@ -1,0 +1,22 @@
+{
+  "name": "manybots",
+  "version": "1.0.0",
+  "description": "Having fun with bots based on BotKit",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@fry:botkit.git"
+  },
+  "keywords": [
+    "bots"
+  ],
+  "author": "Alexander Reichert",
+  "license": "ISC",
+  "dependencies": {
+    "botkit": "^0.1.1"
+  }
+}
