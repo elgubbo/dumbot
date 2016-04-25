@@ -16,7 +16,7 @@ if (cluster.isMaster) {
 else{
 	var botLoadCB = function(bot, message) {
 	    var name = message.match[1];
-	    if (message.user !== config.superAdmin) {
+	    if (!message.fromAdmin) {
 	        bot.reply(message, 'You cannot load a bot, you are not an admin!');
 	        return;
 	    } else {
@@ -44,7 +44,7 @@ else{
 
 	var botUnLoadCB = function(bot, message) {
 	    var name = message.match[1];
-	    if (message.user !== config.superAdmin) {
+	    if (!message.fromAdmin) {
 	        bot.reply(message, 'You cannot unload a bot, you are not an admin!');
 	        return;
 	    } else {
@@ -77,6 +77,7 @@ else{
 	    }
 	};
 	var listAllBots = function(bot, message) {
+		console.log(message);
         slack.controller.storage.bots.all(function(err, botList) {
         	if (err) {
         		controler.debug(err);
@@ -126,6 +127,30 @@ else{
 				bot.reply(message, "Sorry i don't know this bot");
 			}
 		})
+	};
+
+	var addAdminCB = function(bot, message) {
+		if (!message.fromAdmin) {
+			bot.reply(message, 'You cannot make someone admin, because you are not an admin yourself!');
+			return;
+		}
+		var name = message.match[1];
+		slack.controller.storage.users.all(function(err, results) {
+			var newAdmin = null;
+			for (var i = results.length - 1; i >= 0; i--) {
+				if(results[i].name === name){
+					results[i].isAdmin = true;
+					newAdmin = results[i];
+				}
+			}
+			if (newAdmin) {
+				slack.controller.storage.users.save(newAdmin, function(err, id) {
+					if (!err) {
+						bot.reply(message, 'Allrighty! '+name+' is now an admin!');
+					}
+				});
+			}
+		})
 	}
 
 	if (!process.env.token) {
@@ -136,12 +161,17 @@ else{
 	    token: process.env.token
 	}).startRTM();
 	var botPath = config.botPath;
+
 	slack.loadAllBots(botPath, bot);
+
+	//auth middleware
+	slack.controller.middleware.receive.use(slack.auth);
 	//the botLoaderBot
 	slack.controller.hears(['update'], 'direct_message,direct_mention', slack.update);
 	slack.controller.hears(['list bots'], 'direct_message,direct_mention', listAllBots);
 	slack.controller.hears(['enable (.*)'], 'direct_message,direct_mention', botLoadCB);
 	slack.controller.hears(['disable (.*)'], 'direct_message,direct_mention', botUnLoadCB);
 	slack.controller.hears(['(.*) help', 'help (.*)'], 'direct_message,direct_mention', botHelpCB);
+	slack.controller.hears(['make admin (.*)'], 'direct_message,direct_mention', addAdminCB);
 
 }

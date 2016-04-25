@@ -4,4 +4,4 @@ exports.db = {
 
 exports.botPath = './bots/';
 
-exports.superAdmin = 'USERID';
+exports.superAdmin = ['USERID'];

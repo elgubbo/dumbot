@@ -30,10 +30,20 @@ var nameCB = function(bot, message) {
             };
         }
         user.name = name;
-        slack.controller.storage.users.save(user, function(err, id) {
-            bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
-        });
+        slack.controller.storage.users.all(function(err, results) {
+            console.log(results.length);
+            if (err)
+                return;
+            if (results.length == 0) {
+                user.isAdmin = true;
+            }
+            //the first user is an admin
+            slack.controller.storage.users.save(user, function(err, id) {
+                bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
+            });
+        })
     });
+
 };
 
 var whoAmICB = function(bot, message) {

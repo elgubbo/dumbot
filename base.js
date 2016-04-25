@@ -9,18 +9,27 @@ var simpleStorage = new Storage({
 });
 
 var controller = Botkit.slackbot({
-    debug: true,
+    debug: false,
   	storage: simpleStorage,
 });
 
 exports.controller = controller;
+
+exports.auth = function(bot, message, next) {
+    controller.storage.users.get(message.user, function(err, user) {
+    	if (user && user.isAdmin) {
+    		message.fromAdmin = true;
+    	}
+    });
+    next();
+}
 
 /* Load a Bot File during runtime
 	@param subBot the bot to be loaded
 	@param message the message where the load request came from
 */
 var loadBot = function(subBot, message, bot) {
-    if (message!=='internal' && message.user !== config.superAdmin) {
+    if (message!=='internal' && config.superAdmin.indexOf(message.user) == -1) {
         bot.reply(message, 'You cannot load a bot, you are not an admin!');
         return;
     } else {
@@ -39,7 +48,6 @@ var loadBot = function(subBot, message, bot) {
 };
 
 var loadAllBots = function(botPath, bot) {
-	console.log('test');
 		//Loading all bots in botPath
 	fs.lstat(botPath, function(err, stat) {
 	    if (stat.isDirectory()) {
@@ -85,7 +93,7 @@ exports.loadBot = loadBot;
 exports.loadAllBots = loadAllBots;
 
 exports.update = function(bot, message) {
-    if (message.user !== config.superAdmin) {
+    if (config.superAdmin.indexOf(message.user) == -1) {
         bot.reply(message, 'You cannot update, you are not an admin!');
         return;
     } else {

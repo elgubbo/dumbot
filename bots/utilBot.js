@@ -2,7 +2,7 @@ var slack = require('../base.js');
 var os = require('os');
 var config = require('../config_prod.js');
 var restartCB = function(bot, message) {
-    if (message.user !== config.superAdmin) {
+    if (!message.fromAdmin) {
         bot.reply(message, 'Forget it!');
     } else {
         bot.startConversation(message, function(err, convo) {
