@@ -20,10 +20,14 @@ exports.controller = controller;
 	@param message the message where the load request came from
 */
 var loadBot = function(subBot, message, bot) {
-	if (!bot) {
-		controller.debug('LOADBOT: BOT NOT RECEIVED')
-		return;
-	}
+    if (message.user !== config.superAdmin) {
+        bot.reply(message, 'You cannot load a bot, you are not an admin!');
+        return;
+    } else {
+		if (!bot) {
+			controller.debug('LOADBOT: BOT NOT RECEIVED')
+			return;
+		}
 		var tempBot = require(subBot.path);
 		for (var action in tempBot) {
 			controller.hears(tempBot[action].keywords, tempBot[action].context, tempBot[action].cb);
@@ -31,6 +35,7 @@ var loadBot = function(subBot, message, bot) {
 		controller.debug('LOADED BOT '+subBot.id)
 		if (message)
 			bot.reply(message, 'Bot '+subBot.id+' loaded');
+	}
 	};
 
 var loadAllBots = function(botPath, bot) {
