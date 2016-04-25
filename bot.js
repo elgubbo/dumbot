@@ -76,6 +76,58 @@ else{
 	        }.bind(this));
 	    }
 	};
+	var listAllBots = function(bot, message) {
+        slack.controller.storage.bots.all(function(err, botList) {
+        	if (err) {
+        		controler.debug(err);
+        		return;
+        	}
+
+		    var reply = {
+		        'text': "This is a List of all the bots available \n If you need more information on how an ACTIVE bot works, type help <botname>",
+		        'attachments': [
+		        ],
+		    };
+
+		    var attachments = botList.map(function(item) {
+		    	return {
+		            'title': item.id,
+		            'text': "Active: "+item.active,
+		            'color': "#36a64f",
+		    	}
+		    });
+		    reply.attachments = attachments;
+            bot.reply(message, reply);
+
+        }.bind(this));
+	};
+
+	var botHelpCB = function(bot, message) {
+		var id = message.match[1];
+		slack.controller.storage.bots.get(id, function(err, subBot) {
+			if (!err) {
+				var tempBot = require(subBot.path);
+				var attachments = [];
+			    var reply = {
+			        'text': "Here is a Description for "+id+" and its features",
+			        'attachments': [
+			        ],
+			    };
+				for (var action in tempBot) {
+					attachments.push({
+			            'title': action,
+			            'text': "Keywords: "+tempBot[action].keywords+'\n Description: '+tempBot[action].description,
+			            'color': "#36a64f",
+					})
+				}
+				reply.attachments = attachments;
+				bot.reply(message, reply);
+			} else {
+				bot.reply(message, "Sorry i don't know this bot");
+			}
+		})
+	}
+
 	if (!process.env.token) {
 	  console.log('Error: Specify token in environment');
 	  process.exit(1);
@@ -83,11 +135,13 @@ else{
 	var bot = slack.controller.spawn({
 	    token: process.env.token
 	}).startRTM();
-	var botPath = './bots/';
+	var botPath = config.botPath;
 	slack.loadAllBots(botPath, bot);
 	//the botLoaderBot
 	slack.controller.hears(['update'], 'direct_message,direct_mention', slack.update);
+	slack.controller.hears(['list bots'], 'direct_message,direct_mention', listAllBots);
 	slack.controller.hears(['enable (.*)'], 'direct_message,direct_mention', botLoadCB);
 	slack.controller.hears(['disable (.*)'], 'direct_message,direct_mention', botUnLoadCB);
+	slack.controller.hears(['(.*) help'], 'direct_message,direct_mention', botHelpCB);
 
 }

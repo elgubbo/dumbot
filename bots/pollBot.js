@@ -59,4 +59,5 @@ exports.poll = {
     keywords: ['poll (.*)'],
     context: 'direct_mention',
     cb: pollCB,
+    description: 'Say "poll question answer answer answer" and this bot will create a poll in the channel'
 };

@@ -20,7 +20,7 @@ exports.controller = controller;
 	@param message the message where the load request came from
 */
 var loadBot = function(subBot, message, bot) {
-    if (message.user !== config.superAdmin) {
+    if (message!=='internal' && message.user !== config.superAdmin) {
         bot.reply(message, 'You cannot load a bot, you are not an admin!');
         return;
     } else {
@@ -33,10 +33,10 @@ var loadBot = function(subBot, message, bot) {
 			controller.hears(tempBot[action].keywords, tempBot[action].context, tempBot[action].cb);
 		}
 		controller.debug('LOADED BOT '+subBot.id)
-		if (message)
+		if (message && message !== 'internal')
 			bot.reply(message, 'Bot '+subBot.id+' loaded');
 	}
-	};
+};
 
 var loadAllBots = function(botPath, bot) {
 	console.log('test');
@@ -69,7 +69,7 @@ var loadAllBots = function(botPath, bot) {
 		                    } else {
 		                    	console.log('loading');
 		                    	if (res.active) {
-		                    		loadBot(subBot, null, bot);
+		                    		loadBot(subBot, 'internal', bot);
 		                    	}
 		                    }
 		                });
@@ -78,7 +78,7 @@ var loadAllBots = function(botPath, bot) {
 	        });
 	    }
 	});
-}
+};
 
 exports.loadBot = loadBot;
 
@@ -86,7 +86,7 @@ exports.loadAllBots = loadAllBots;
 
 exports.update = function(bot, message) {
     if (message.user !== config.superAdmin) {
-        bot.reply(message, 'You cannot load a bot, you are not an admin!');
+        bot.reply(message, 'You cannot update, you are not an admin!');
         return;
     } else {
 		loadAllBots(config.botPath, bot);

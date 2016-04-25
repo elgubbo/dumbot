@@ -109,14 +109,17 @@ exports.hello = {
     keywords: ['hello', 'hi'],
     context: 'direct_message,direct_mention,mention,ambient',
     cb: helloCB,
+    description: 'Says hello to anyone who says hello'
 };
 exports.name = {
     keywords: ['call me (.*)', 'my name is (.*)'],
     context: 'direct_message,direct_mention,mention',
     cb: nameCB,
+    description: 'Type "call me <name>", and the bot will remember your name'
 };
 exports.whoAmI = {
     keywords: ['what is my name', 'who am i'],
     context: 'direct_message,direct_mention,mention',
     cb: whoAmICB,
+    description: 'Type "who am i", and the bot tell you what it thinks is your name'
 };

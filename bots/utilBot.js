@@ -1,5 +1,6 @@
 var slack = require('../base.js');
-var os = require('os')
+var os = require('os');
+var config = require('../config_prod.js');
 var shutdownCB = function(bot, message) {
     if (message.user !== config.superAdmin) {
         bot.reply(message, 'Forget it!');
@@ -64,9 +65,11 @@ exports.uptime = {
     keywords: ['uptime', 'identify yourself', 'who are you', 'what is your name'],
     context: 'direct_message,direct_mention,mention,ambient',
     cb: uptimeCB,
+    description: 'Say "uptime" and this bot will tell you how long its awake'
 };
 exports.shutdown = {
     keywords: ['shutdown'],
     context: 'direct_message,direct_mention',
     cb: shutdownCB,
+    description: 'Say "shutdown" and this bot will shut down'
 };
