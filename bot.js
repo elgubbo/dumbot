@@ -142,6 +142,6 @@ else{
 	slack.controller.hears(['list bots'], 'direct_message,direct_mention', listAllBots);
 	slack.controller.hears(['enable (.*)'], 'direct_message,direct_mention', botLoadCB);
 	slack.controller.hears(['disable (.*)'], 'direct_message,direct_mention', botUnLoadCB);
-	slack.controller.hears(['(.*) help'], 'direct_message,direct_mention', botHelpCB);
+	slack.controller.hears(['(.*) help', 'help (.*)'], 'direct_message,direct_mention', botHelpCB);
 
 }
