@@ -16,12 +16,10 @@ var giphyCB = function(bot, message) {
         ],
     };
     request('http://api.giphy.com/v1/gifs/search?q='+search+'&api_key='+config.apiKeys.giphy, function (error, response, body) {
-        console.log(error);
         if (!error && response.statusCode == 200) {
             body = JSON.parse(body);
             body = body.data;
             var firstRes = body[0];
-            console.log(firstRes);
             attachment.attachments[0].text = firstRes.url;
             attachment.attachments[0].image_url = firstRes.images.downsized.url;
             bot.reply(message, attachment);
