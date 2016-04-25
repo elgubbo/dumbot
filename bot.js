@@ -84,7 +84,7 @@ else{
         	}
 
 		    var reply = {
-		        'text': "This is a List of all the bots available \n If you need more information on how an ACTIVE bot works, type help <botname>",
+		        'text': "This is a List of all the bots available \n If you need more information on how an ACTIVE bot works, type '<botname> help'",
 		        'attachments': [
 		        ],
 		    };
