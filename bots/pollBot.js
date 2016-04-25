@@ -27,8 +27,6 @@ var buildPoll = function(parts) {
 
 var pollCB = function(bot, message) {
     var pollString = message.match[1];
-    console.log(message);
-    console.log(pollString);
     var pollParts = pollString.match(/(?:[^\s"]+|"[^"]*")+/g);
     var attachment = buildPoll(pollParts);
     console.log(attachment);
@@ -38,7 +36,6 @@ var pollCB = function(bot, message) {
             var emotiArray = FRUITEMOTICONS.slice(0, reactionAmount).map(function(item) {
                 return item.replace(':', '');
             });
-            console.log(emotiArray);
             for (var i = 0; i < emotiArray.length; i++) {
                 bot.api.reactions.add({
                     timestamp: m2.ts,
