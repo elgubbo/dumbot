@@ -76,9 +76,12 @@ else{
 	        }.bind(this));
 	    }
 	};
-
+	if (!process.env.token) {
+	  console.log('Error: Specify token in environment');
+	  process.exit(1);
+	}
 	var bot = slack.controller.spawn({
-	    token: config.token.slack
+	    token: process.env.token
 	}).startRTM();
 	var botPath = './bots/';
 	slack.loadAllBots(botPath, bot);

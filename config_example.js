@@ -1,8 +1,3 @@
-exports.token = {
-		slack : "token",
-		facebook: "token"
-	};
-
 exports.db = {
 	jsonPath: './storage/'
 };
