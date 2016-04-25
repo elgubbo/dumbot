@@ -1,7 +1,7 @@
 var slack = require('../base.js');
 var os = require('os');
 var config = require('../config_prod.js');
-var shutdownCB = function(bot, message) {
+var restartCB = function(bot, message) {
     if (message.user !== config.superAdmin) {
         bot.reply(message, 'Forget it!');
     } else {
@@ -38,7 +38,7 @@ var uptimeCB = function(bot, message) {
 
     bot.reply(message,
         ':robot_face: I am a bot named <@' + bot.identity.name +
-         '>. I have been running for ' + uptime + ' on ' + hostname + '.');
+         '>. I have been running for ' + uptime + ' on ' + hostname + '. \n You can check my source code at: https://github.com/elgubbo/dumbot');
 
 };
 
@@ -67,9 +67,9 @@ exports.uptime = {
     cb: uptimeCB,
     description: 'Say "uptime" and this bot will tell you how long its awake'
 };
-exports.shutdown = {
-    keywords: ['shutdown'],
+exports.restart = {
+    keywords: ['restart'],
     context: 'direct_message,direct_mention',
-    cb: shutdownCB,
-    description: 'Say "shutdown" and this bot will shut down'
+    cb: restartCB,
+    description: 'Say "restart" and this bot will restart'
 };

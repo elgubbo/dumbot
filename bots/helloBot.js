@@ -107,7 +107,7 @@ var whoAmICB = function(bot, message) {
 
 exports.hello = {
     keywords: ['hello', 'hi'],
-    context: 'direct_message,direct_mention,mention,ambient',
+    context: 'direct_message,direct_mention,mention',
     cb: helloCB,
     description: 'Says hello to anyone who says hello'
 };
