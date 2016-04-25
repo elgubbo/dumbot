@@ -9,7 +9,7 @@ var simpleStorage = new Storage({
 });
 
 var controller = Botkit.slackbot({
-    debug: false,
+    debug: true,
   	storage: simpleStorage,
 });
 
