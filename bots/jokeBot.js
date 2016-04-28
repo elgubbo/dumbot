@@ -6,7 +6,7 @@ var slack = require('../base.js');
 var tellJoke = function(bot, message) {
     if (!slack.botAllowed(botName, message))
         return;
-    request('http://api.icndb.com/jokes/random', function (error, response, body) {
+    request('http://api.icndb.com/jokes/random?limitTo=[nerdy]', function (error, response, body) {
       if (!error && response.statusCode == 200) {
         body = JSON.parse(body);
         bot.reply(message, body.value.joke);
