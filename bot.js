@@ -1,5 +1,6 @@
 var slack = require('./base.js');
 var config = require('./config_prod.js');
+var ralph = require('./storage/raw/ralphquotes.js');
 var cluster = require('cluster');
 var MongoStorage = require('./storage/mongo-storage.js')();
 var wit = require('botkit-middleware-witai')({
@@ -79,6 +80,7 @@ else{
 	        });
 	    }
 	};
+
 	var listAllBots = function(bot, message) {
         MongoStorage.bot.find({}, function(err, botList) {
         	if (err) {
@@ -184,7 +186,21 @@ else{
 		})
 	});
 
-
+	//the bot has to be kind of stupid, so quoting ralph will be a base functionality
+	slack.controller.on('rtm_open', function() {
+		console.log('test');
+		(function(){
+			var quotes = ralph.quotes;
+			var quote = quotes[Math.floor(Math.random()*quotes.length)];
+			MongoStorage.channel.random(function(err, res) {
+				if (res) {
+					bot.say({text: quote, channel: res.id});
+				}
+			});
+		    // do some stuff
+		    setTimeout(arguments.callee, 30*60*1000);
+		})();
+	});
 
 	slack.controller.middleware.receive.use(slack.auth);
 	slack.controller.middleware.receive.use(slack.botActive);
