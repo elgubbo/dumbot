@@ -4,6 +4,7 @@ var Schema = mongoose.Schema;
 // create a schema
 var userSchema = new Schema({
   id: String,
+  teamId: String,
   name    : { type: String, required: false, trim: true },
   isAdmin:  {type: Boolean, default: false},
   created_at    : { type: Date, required: true, default: Date.now }

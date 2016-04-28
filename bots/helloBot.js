@@ -4,6 +4,7 @@ var MongoStorage = require('../storage/mongo-storage.js')();
 var botName = 'helloBot';
 
 var helloCB = function(bot, message) {
+    console.log(message);
     if (!slack.botAllowed(botName, message))
         return;
     bot.api.reactions.add({
@@ -15,7 +16,7 @@ var helloCB = function(bot, message) {
             bot.botkit.log('Failed to add emoji reaction :(', err);
         }
     });
-    MongoStorage.user.findOne({'id': message.user}, function(err, user) {
+    MongoStorage.user.findOne({'id': message.user, 'teamId': message.team}, function(err, user) {
         if (user && user.name) {
             bot.reply(message, 'Hello ' + user.name + '!!');
         } else {
@@ -28,10 +29,11 @@ var nameCB = function(bot, message) {
     if (!slack.botAllowed(botName, message))
         return;
     var name = message.intents[0].entities.name[0].value;
-     MongoStorage.user.findOne({'id': message.user}, function(err, user) {
+     MongoStorage.user.findOne({'id': message.user, 'teamId': message.team}, function(err, user) {
         if (!user) {
             user = new MongoStorage.user();
             user.id = message.user;
+            user.teamId = message.team;
         }
         user.name = name;
         MongoStorage.user.count({}, function(err, count) {
@@ -51,7 +53,7 @@ var nameCB = function(bot, message) {
 var whoAmICB = function(bot, message) {
     if (!slack.botAllowed(botName, message))
         return;
-    MongoStorage.user.findOne({'id': message.user}, function(err, user) {
+    MongoStorage.user.findOne({'id': message.user, 'teamId': message.team}, function(err, user) {
         if (user && user.name) {
             bot.reply(message, 'Your name is ' + user.name);
         } else {
@@ -92,11 +94,13 @@ var whoAmICB = function(bot, message) {
                         if (convo.status == 'completed') {
                             bot.reply(message, 'OK! I will update my dossier...');
 
-                            MongoStorage.user.findOne({'id': message.user}, function(err, user) {
+                            MongoStorage.user.findOne({'id': message.user, 'teamId': message.team}, function(err, user) {
                                 if (!user) {
-                                    user = {
+
+                                    user = new MongoStorage.user({
                                         id: message.user,
-                                    };
+                                        teamId: message.team
+                                    });
                                 }
                                 user.name = convo.extractResponse('nickname');
                                 user.save(function(err, id) {

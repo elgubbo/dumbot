@@ -19,7 +19,7 @@ exports.controller = controller;
 
 //'auth' middleware that checks if the user has admin status, authorization happens on a action level
 exports.auth = function(bot, message, next) {
-    MongoStorage.user.findOne({'id': message.user}, function(err, user) {
+    MongoStorage.user.findOne({'id': message.user, 'teamId': message.team}, function(err, user) {
     	if (user && user.isAdmin) {
     		message.fromAdmin = true;
     	}
