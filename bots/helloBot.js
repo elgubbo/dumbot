@@ -1,6 +1,11 @@
 var slack = require('../base.js');
+var MongoStorage = require('../storage/mongo-storage.js')();
+
+var botName = 'helloBot';
 
 var helloCB = function(bot, message) {
+    if (!slack.botAllowed(botName, message))
+        return;
     bot.api.reactions.add({
         timestamp: message.ts,
         channel: message.channel,
@@ -10,9 +15,7 @@ var helloCB = function(bot, message) {
             bot.botkit.log('Failed to add emoji reaction :(', err);
         }
     });
-
-
-    slack.controller.storage.users.get(message.user, function(err, user) {
+    MongoStorage.user.findOne({'id': message.user}, function(err, user) {
         if (user && user.name) {
             bot.reply(message, 'Hello ' + user.name + '!!');
         } else {
@@ -22,33 +25,33 @@ var helloCB = function(bot, message) {
 };
 
 var nameCB = function(bot, message) {
-    var name = message.match[1];
-    slack.controller.storage.users.get(message.user, function(err, user) {
+    if (!slack.botAllowed(botName, message))
+        return;
+    var name = message.intents[0].entities.name[0].value;
+     MongoStorage.user.findOne({'id': message.user}, function(err, user) {
         if (!user) {
-            user = {
-                id: message.user,
-            };
+            user = new MongoStorage.user();
+            user.id = message.user;
         }
         user.name = name;
-        slack.controller.storage.users.all(function(err, results) {
-            console.log(results.length);
+        MongoStorage.user.count({}, function(err, count) {
             if (err)
                 return;
-            if (results.length == 0) {
+            if (count == 0) {
                 user.isAdmin = true;
             }
             //the first user is an admin
-            slack.controller.storage.users.save(user, function(err, id) {
+            user.save(function(err, id) {
                 bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
             });
         })
     });
-
 };
 
 var whoAmICB = function(bot, message) {
-
-    slack.controller.storage.users.get(message.user, function(err, user) {
+    if (!slack.botAllowed(botName, message))
+        return;
+    MongoStorage.user.findOne({'id': message.user}, function(err, user) {
         if (user && user.name) {
             bot.reply(message, 'Your name is ' + user.name);
         } else {
@@ -89,15 +92,16 @@ var whoAmICB = function(bot, message) {
                         if (convo.status == 'completed') {
                             bot.reply(message, 'OK! I will update my dossier...');
 
-                            slack.controller.storage.users.get(message.user, function(err, user) {
+                            MongoStorage.user.findOne({'id': message.user}, function(err, user) {
                                 if (!user) {
                                     user = {
                                         id: message.user,
                                     };
                                 }
                                 user.name = convo.extractResponse('nickname');
-                                slack.controller.storage.users.save(user, function(err, id) {
-                                    bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
+                                user.save(function(err, id) {
+                                    if (!err)
+                                        bot.reply(message, 'Got it. I will call you ' + user.name + ' from now on.');
                                 });
                             });
 
@@ -116,19 +120,19 @@ var whoAmICB = function(bot, message) {
 
 
 exports.hello = {
-    keywords: ['hello', 'hi'],
+    keywords: ['hello'],
     context: 'direct_message,direct_mention,mention',
     cb: helloCB,
     description: 'Says hello to anyone who says hello'
 };
 exports.name = {
-    keywords: ['call me (.*)', 'my name is (.*)'],
+    keywords: ['naming'],
     context: 'direct_message,direct_mention,mention',
     cb: nameCB,
     description: 'Type "call me <name>", and the bot will remember your name'
 };
 exports.whoAmI = {
-    keywords: ['what is my name', 'who am i'],
+    keywords: ['who_am_i'],
     context: 'direct_message,direct_mention,mention',
     cb: whoAmICB,
     description: 'Type "who am i", and the bot tell you what it thinks is your name'

@@ -1,35 +1,77 @@
 var Botkit = require('botkit');
 var config = require('./config_prod.js');
-var Storage = require('./storage/simple-storage.js');
+var MongoStorage = require('./storage/mongo-storage.js')();
+var mongoose = require('mongoose');
 var fs = require('fs');
 
 
-var simpleStorage = new Storage({
-	path: config.db.jsonPath
-});
-
-var controller = Botkit.slackbot({
-    debug: true,
-  	storage: simpleStorage,
-});
+if (config.db.hasOwnProperty('mongo')) {
+	console.log('MONGO CONFIG');
+	mongoose.connect(config.db.mongo.connectionString, config.db.mongo.options || {});
+	var controller = Botkit.slackbot({
+	    debug: config.debug,
+	});
+} else {
+	new Error('COULD NOT CONNECT TO MONGODB');
+}
 
 exports.controller = controller;
 
+//'auth' middleware that checks if the user has admin status, authorization happens on a action level
 exports.auth = function(bot, message, next) {
-    controller.storage.users.get(message.user, function(err, user) {
+    MongoStorage.user.findOne({'id': message.user}, function(err, user) {
     	if (user && user.isAdmin) {
     		message.fromAdmin = true;
+    		next();
     	}
     });
-    next();
 }
+
+//checks if bot is allowed for the message
+exports.botAllowed = function(botName, message) {
+	return !(message.disabledBots.indexOf(botName) > -1);
+}
+
+//checks if bot is active for the channel/team and saves it in the message accordingly
+exports.botActive = function(bot, message, next) {
+	MongoStorage.team.findOne({'slackTeam.id': bot.team_info.id}, function(err, team) {
+		if (!err) {
+			MongoStorage.channel.findOne({'id': message.channel}, function(err, channel) {
+				if (!err) {
+					if (channel) {
+						var tD = team.disabledBots || [];
+						var cD = channel.disabledBots || [];
+						var ind;
+						for (var i = tD.length - 1; i >= 0; i--) {
+							if (ind = cD.indexOf(td[i]) > 0)
+								cD.splice(ind);
+						}
+						for (var i = cD.length - 1; i >= 0; i--) {
+							if (ind = tD.indexOf(cD[i]) > 0)
+								tD.splice(ind);
+						}
+						message.disabledBots = tD.concat(cD);
+					} else {
+						if (team.disabledBots)
+							message.disabledBots = team.disabledBots;
+						else {
+							message.disabledBots = [];
+						}
+					}
+				}
+    			next();
+			})
+		}
+    });
+}
+
 
 /* Load a Bot File during runtime
 	@param subBot the bot to be loaded
 	@param message the message where the load request came from
 */
-var loadBot = function(subBot, message, bot) {
-    if (message!=='internal' && config.superAdmin.indexOf(message.user) == -1) {
+var loadBot = function(subBot, message, bot, witMiddelware) {
+    if (message!=='internal' && !message.fromAdmin) {
         bot.reply(message, 'You cannot load a bot, you are not an admin!');
         return;
     } else {
@@ -39,7 +81,7 @@ var loadBot = function(subBot, message, bot) {
 		}
 		var tempBot = require(subBot.path);
 		for (var action in tempBot) {
-			controller.hears(tempBot[action].keywords, tempBot[action].context, tempBot[action].cb);
+			controller.hears(tempBot[action].keywords, tempBot[action].context, witMiddelware, tempBot[action].cb);
 		}
 		controller.debug('LOADED BOT '+subBot.id)
 		if (message && message !== 'internal')
@@ -47,7 +89,7 @@ var loadBot = function(subBot, message, bot) {
 	}
 };
 
-var loadAllBots = function(botPath, bot) {
+var loadAllBots = function(botPath, bot, witMiddelware) {
 		//Loading all bots in botPath
 	fs.lstat(botPath, function(err, stat) {
 	    if (stat.isDirectory()) {
@@ -58,46 +100,25 @@ var loadAllBots = function(botPath, bot) {
 	            	});
 	            var bots = files.map(function(item, index) {
 		            return {
-		            	id : idArray[index],
+		            	name : idArray[index],
 		            	path: botPath+item,
-		            	active: false,
 		            }
 	            });
-	            console.log(bots);
 	            for (var i = bots.length - 1; i >= 0; i--) {
-	            	(function(subBot) {
-		                controller.storage.bots.get(subBot.id, function(err, res) {
-		                	console.log(res);
-		                    if (!res) {
-			                    controller.storage.bots.save(subBot, function(err, id) {
-			                    	console.log(err);
-			                    	console.log(id);
-			                    	//new bot saved
-			                    });
-		                    } else {
-		                    	console.log('loading');
-		                    	if (res.active) {
-		                    		loadBot(subBot, 'internal', bot);
-		                    	}
-		                    }
-		                });
-	            	})(bots[i]);
+	            	MongoStorage.bot.findOne({'name': bots[i].name}, function(bot, err, res) {
+	            		console.log(bot);
+	            		if (!err) {
+	            			if (!res) {
+	            				var botModel = new MongoStorage.bot(bot);
+	            				botModel.save();
+	            			}
+	            		}
+	            	}.bind(this, bots[i]))
+	            	loadBot(bots[i], 'internal', bot, witMiddelware);
 	            }
 	        });
 	    }
 	});
 };
 
-exports.loadBot = loadBot;
-
 exports.loadAllBots = loadAllBots;
-
-exports.update = function(bot, message) {
-    if (config.superAdmin.indexOf(message.user) == -1) {
-        bot.reply(message, 'You cannot update, you are not an admin!');
-        return;
-    } else {
-		loadAllBots(config.botPath, bot);
-		bot.reply(message, 'Allright!');
-	}
-}

@@ -1,6 +1,10 @@
 var slack = require('./base.js');
 var config = require('./config_prod.js');
 var cluster = require('cluster');
+var MongoStorage = require('./storage/mongo-storage.js')();
+var wit = require('botkit-middleware-witai')({
+    token: config.apiKeys.wit
+});
 
 //this automatically restarts the process if one worker is killed (eg due to unloading of bots)
 if (cluster.isMaster) {
@@ -20,25 +24,26 @@ else{
 	        bot.reply(message, 'You cannot load a bot, you are not an admin!');
 	        return;
 	    } else {
-	        slack.controller.storage.bots.get(name, function(err, subBot) {
-	        	if (err) {
-	        		console.log(err);
-	        		return;
-	        	}
+	        MongoStorage.bot.findOne({'name': name}, function(err, subBot) {
 	            if (!subBot) {
 	                bot.reply(message, 'Cannot find the bot you want to load!');
 	            } else {
-	            	subBot.active = true;
-	        		slack.controller.storage.bots.save(subBot, function(err, id) {
-	        			if (err) {
-	        				slack.controller.debug(err);
-	        				return;
-	        			} else {
-	            			slack.loadBot(subBot, message, bot);
-	        			}
-	        		}.bind(this));
+	            	MongoStorage.channel.findOne({'id': message.channel}, function(err, channel) {
+	            		if (!channel) {
+	            			channel = new MongoStorage.channel();
+	            			channel.id = message.channel;
+	            		} else {
+	            			if (channel.disabledBots && channel.disabledBots.indexOf(subBot.name) > -1)
+	            				channel.disabledBots.splice(channel.disabledBots.indexOf(subBot.name));
+	            		}
+	            		channel.save(function(err, res) {
+	            			if(res) {
+	            				bot.reply(message, 'Okay! Enabled ' + subBot.name + 'for this channel');
+	            			}
+	            		})
+	            	})
 	            }
-	        }.bind(this));
+	        });
 	    }
 	};
 
@@ -48,52 +53,48 @@ else{
 	        bot.reply(message, 'You cannot unload a bot, you are not an admin!');
 	        return;
 	    } else {
-	        slack.controller.storage.bots.get(name, function(err, subBot) {
-	        	if (err) {
-	        		console.log(err);
-	        		return;
-	        	}
+	        MongoStorage.bot.findOne({'name': name}, function(err, subBot) {
 	            if (!subBot) {
 	                bot.reply(message, 'Cannot find the bot you want to unload!');
 	            } else {
-	            	if (subBot.active) {
-		            	subBot.active = false;
-		        		slack.controller.storage.bots.save(subBot, function(err, res) {
-		        			if (err) {
-		        				slack.controller.debug(err)
-		        				return;
-		        			} else {
-		                		bot.reply(message, 'Unloaded '+res+'! Restarting now!');
-			                    setTimeout(function() {
-			                        process.exit();
-			                    }, 3000);
-		        			}
-		        		}.bind(this));
-	            	} else {
-	            		bot.reply(message, "Bot already disabled! No need to do it again!");
-	            	}
+	            	MongoStorage.channel.findOne({'id': message.channel}, function(err, channel) {
+	            		if (!channel) {
+	            			channel = new MongoStorage.channel();
+	            			channel.id = message.channel;
+	            			channel.disabledBots = [subBot.name];
+	            		} else {
+	            			if (channel.disabledBots){
+	            				channel.disabledBots.push(subBot.name);
+	            			} else {
+	            				channel.disabledBots = [subBot.name];
+	            			}
+	            		}
+	            		channel.save(function(err, res) {
+	            			if(res) {
+	            				bot.reply(message, 'Okay! Disabled ' + subBot.name + 'for this channel');
+	            			}
+	            		})
+	            	})
 	            }
-	        }.bind(this));
+	        });
 	    }
 	};
 	var listAllBots = function(bot, message) {
-		console.log(message);
-        slack.controller.storage.bots.all(function(err, botList) {
+        MongoStorage.bot.find({}, function(err, botList) {
         	if (err) {
         		controler.debug(err);
         		return;
         	}
 
 		    var reply = {
-		        'text': "This is a List of all the bots available \n If you need more information on how an ACTIVE bot works, type '<botname> help'",
+		        'text': "This is a List of all the bots available \n If you need more information on what functions a bot has, type '<botname> help'",
 		        'attachments': [
 		        ],
 		    };
 
 		    var attachments = botList.map(function(item) {
 		    	return {
-		            'title': item.id,
-		            'text': "Active: "+item.active,
+		            'title': item.name,
 		            'color': "#36a64f",
 		    	}
 		    });
@@ -104,13 +105,13 @@ else{
 	};
 
 	var botHelpCB = function(bot, message) {
-		var id = message.match[1];
-		slack.controller.storage.bots.get(id, function(err, subBot) {
-			if (!err) {
+		var name = message.match[1];
+		MongoStorage.bot.findOne({'name': name}, function(err, subBot) {
+			if (!err && subBot) {
 				var tempBot = require(subBot.path);
 				var attachments = [];
 			    var reply = {
-			        'text': "Here is a Description for "+id+" and its features",
+			        'text': "Here is a Description for " + subBot.name + " and its features",
 			        'attachments': [
 			        ],
 			    };
@@ -135,39 +136,67 @@ else{
 			return;
 		}
 		var name = message.match[1];
-		slack.controller.storage.users.all(function(err, results) {
-			var newAdmin = null;
-			for (var i = results.length - 1; i >= 0; i--) {
-				if(results[i].name === name){
-					results[i].isAdmin = true;
-					newAdmin = results[i];
+		MongoStorage.user.findOne({'name': name}, function(err, res) {
+			if (!res)
+				bot.reply(message, 'Cannot find the user!')
+			res.isAdmin = true;
+			res.save(function(err, res) {
+				if (!res){
+					bot.reply('Whoops, i fucked up while saving the user - check the logs boss');
+				} else {
+					bot.reply('Allrihgt, ' + name + ' is now Admin')
 				}
-			}
-			if (newAdmin) {
-				slack.controller.storage.users.save(newAdmin, function(err, id) {
-					if (!err) {
-						bot.reply(message, 'Allrighty! '+name+' is now an admin!');
-					}
-				});
-			}
-		})
+			});
+		});
 	}
+
+	var update = function(bot, message) {
+	    if (message.fromAdmin) {
+	        bot.reply(message, 'You cannot update, you are not an admin!');
+	        return;
+	    } else {
+			loadAllBots(config.botPath, bot);
+			bot.reply(message, 'Allright!');
+		}
+	}
+
 
 	if (!process.env.token) {
 	  console.log('Error: Specify token in environment');
 	  process.exit(1);
 	}
+
 	var bot = slack.controller.spawn({
 	    token: process.env.token
-	}).startRTM();
-	var botPath = config.botPath;
+	}).startRTM(function(err, bot) {
+		var teamInfo = bot.team_info;
+		MongoStorage.team.findOne({'slackTeam.id': teamInfo.id}).exec(function(err, res) {
+			if (!res) {
+				var team = new MongoStorage.team();
+				team.slackTeam = teamInfo;
+				team.save(function(err, res) {
+					if (!res) {
+						console.log(err);
+						new Error('COULD NOT SAVE TEAM');
+					}
+				})
+			}
+		})
+	});
 
-	slack.loadAllBots(botPath, bot);
 
-	//auth middleware
+
 	slack.controller.middleware.receive.use(slack.auth);
+	slack.controller.middleware.receive.use(slack.botActive);
+	slack.controller.middleware.receive.use(wit.receive);
+
+	var botPath = config.botPath;
+	slack.loadAllBots(botPath, bot, wit.hears);
+	//auth middleware
+
+
 	//the botLoaderBot
-	slack.controller.hears(['update'], 'direct_message,direct_mention', slack.update);
+	slack.controller.hears(['update'], 'direct_message,direct_mention', update);
 	slack.controller.hears(['list bots'], 'direct_message,direct_mention', listAllBots);
 	slack.controller.hears(['enable (.*)'], 'direct_message,direct_mention', botLoadCB);
 	slack.controller.hears(['disable (.*)'], 'direct_message,direct_mention', botUnLoadCB);

@@ -62,7 +62,7 @@ var formatUptime = function(uptime) {
 
 
 exports.uptime = {
-    keywords: ['uptime', 'identify yourself', 'who are you', 'what is your name'],
+    keywords: ['uptime'],
     context: 'direct_message,direct_mention,mention,ambient',
     cb: uptimeCB,
     description: 'Say "uptime" and this bot will tell you how long its awake'

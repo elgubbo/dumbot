@@ -18,6 +18,8 @@
   "license": "ISC",
   "dependencies": {
     "botkit": "^0.1.1",
+    "botkit-middleware-witai": "0.0.2",
+    "mongoose": "^4.4.13",
     "request": "^2.72.0"
   }
 }

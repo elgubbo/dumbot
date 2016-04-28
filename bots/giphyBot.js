@@ -1,9 +1,13 @@
 var slack = require('../base.js');
 var request = require('request');
 var config = require('../config_prod.js');
+var botName = 'giphyBot';
 
 var giphyCB = function(bot, message) {
-    var search = message.match[1];
+    if (!slack.botAllowed(botName, message))
+        return;
+    console.log(message.intents);
+    var search = message.intents[0].entities.gif_type[0].value;
     search = encodeURIComponent(search);
     var attachment = {
         'text': "",
@@ -19,6 +23,10 @@ var giphyCB = function(bot, message) {
         if (!error && response.statusCode == 200) {
             body = JSON.parse(body);
             body = body.data;
+            if (!body.length) {
+                bot.reply(message, 'Could not find a gif for ' + search + ' i\'m sorry :(');
+                return;
+            }
             var firstRes = body[0];
             attachment.attachments[0].text = firstRes.url;
             attachment.attachments[0].image_url = firstRes.images.downsized.url;
@@ -28,7 +36,7 @@ var giphyCB = function(bot, message) {
 };
 
 exports.giphy = {
-    keywords: ['giphy (.*)'],
+    keywords: ['gif'],
     context: 'direct_message,direct_mention,mention',
     cb: giphyCB,
     description: 'Search and display a gif'

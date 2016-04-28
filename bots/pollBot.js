@@ -26,7 +26,8 @@ var buildPoll = function(parts) {
 }
 
 var pollCB = function(bot, message) {
-    var pollString = message.match[1];
+    console.log(message);
+    var pollString = message.intents[0].entities.poll_entries[0].value;
     var pollParts = pollString.match(/(?:[^\s"]+|"[^"]*")+/g);
     var attachment = buildPoll(pollParts);
     console.log(attachment);
@@ -53,8 +54,8 @@ var pollCB = function(bot, message) {
 
 
 exports.poll = {
-    keywords: ['poll (.*)'],
-    context: 'direct_mention',
+    keywords: ['poll'],
+    context: 'direct_mention,direct_message',
     cb: pollCB,
     description: 'Say "poll question answer answer answer" and this bot will create a poll in the channel'
 };
