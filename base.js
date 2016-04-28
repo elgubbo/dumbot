@@ -22,8 +22,8 @@ exports.auth = function(bot, message, next) {
     MongoStorage.user.findOne({'id': message.user}, function(err, user) {
     	if (user && user.isAdmin) {
     		message.fromAdmin = true;
-    		next();
     	}
+    	next();
     });
 }
 
