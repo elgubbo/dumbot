@@ -201,7 +201,7 @@ else{
 				}
 			});
 		    // do some stuff
-		    setTimeout(arguments.callee, 30*60*1000);
+		    setTimeout(arguments.callee, 90*60*1000);
 		})();
 	});
 
