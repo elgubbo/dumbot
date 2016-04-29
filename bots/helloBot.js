@@ -36,7 +36,7 @@ var nameCB = function(bot, message) {
             user.teamId = message.team;
         }
         user.name = name;
-        MongoStorage.user.count({}, function(err, count) {
+        MongoStorage.user.count({'teamId': message.team}, function(err, count) {
             if (err)
                 return;
             if (count == 0) {
