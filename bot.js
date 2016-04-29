@@ -186,9 +186,12 @@ else{
 		})
 	});
 
+	slack.controller.on('rtm_close', function() {
+		console.log('connection closed');
+	});
 	//the bot has to be kind of stupid, so quoting ralph will be a base functionality
 	slack.controller.on('rtm_open', function() {
-		console.log('test');
+		console.log('connection opened');
 		(function(){
 			var quotes = ralph.quotes;
 			var quote = quotes[Math.floor(Math.random()*quotes.length)];
