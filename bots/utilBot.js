@@ -1,6 +1,4 @@
-var slack = require('../base.js');
 var os = require('os');
-var config = require('../config_prod.js');
 var restartCB = function(bot, message) {
     if (!message.fromAdmin) {
         bot.reply(message, 'Forget it!');
@@ -52,13 +50,13 @@ var formatUptime = function(uptime) {
         uptime = uptime / 60;
         unit = 'hour';
     }
-    if (uptime != 1) {
+    if (uptime !== 1) {
         unit = unit + 's';
     }
 
     uptime = uptime + ' ' + unit;
     return uptime;
-}
+};
 
 
 exports.uptime = {

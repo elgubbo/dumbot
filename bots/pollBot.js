@@ -2,7 +2,7 @@ var FRUITEMOTICONS = [':lemon:', ':apple:', ':tangerine:', ':cherries:', ':grape
 var EMOTICONS = [':one:', ':two:', ':three:', ':four:', ':five:', ':six:', ':seven:', ':eight:', ':nine:', ':ten:'];
 
 var buildPoll = function(parts) {
-    if( !(Object.prototype.toString.call( parts ) === '[object Array]')) {
+    if( (Object.prototype.toString.call( parts ) !== '[object Array]')) {
         return false;
     }
     var attachment = {
@@ -19,11 +19,11 @@ var buildPoll = function(parts) {
         if ((index < FRUITEMOTICONS.length) && (index!==0)) {
           attachment.attachments[0].text = attachment.attachments[0].text + FRUITEMOTICONS[index-1] + ": " + part.replace(/"([^"]+(?="))"/g, '$1') +"\n";
         } else {
-            attachment.attachments[0].title = part.replace(/"([^"]+(?="))"/g, '$1') + "\n"
+            attachment.attachments[0].title = part.replace(/"([^"]+(?="))"/g, '$1') + "\n";
         }
         });
     return attachment;
-}
+};
 
 var pollCB = function(bot, message) {
     console.log(message);
