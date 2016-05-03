@@ -192,11 +192,11 @@ else{
 
 
     slack.controller.middleware.receive.use(slack.messageLog);
-    slack.controller.middleware.receive.use(slack.auth);
     slack.controller.middleware.receive.use(slack.botActive);
+    slack.controller.middleware.receive.use(slack.auth);
     slack.controller.middleware.receive.use(wit.receive);
 
-    slack.controller.middleware.send.use(slack.checkBotActive);
+    slack.controller.middleware.send.use(slack.botActiveSend);
 
     //auth middleware
 

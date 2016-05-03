@@ -6,7 +6,6 @@ var fs = require('fs');
 
 
 if (config.db.hasOwnProperty('mongo')) {
-    console.log('MONGO CONFIG');
     mongoose.connect(config.db.mongo.connectionString, config.db.mongo.options || {});
     var controller = Botkit.slackbot({
         debug: config.debug
@@ -29,14 +28,16 @@ exports.auth = function(bot, message, next) {
 
 //'message' middleware saves every incoming message
 exports.messageLog = function(bot, message, next) {
-    var messageModel = new MongoStorage.message(message);
-    messageModel.save(function(err) {
-        if (err) {
-            console.log(err);
-        } else {
-            next();
-        }
-    });
+    if (message.type === 'message') {
+        var messageModel = new MongoStorage.message(message);
+        messageModel.save(function(err) {
+            if (err) {
+                console.log(err);
+            } else {
+                next();
+            }
+        });
+    }
 };
 
 //checks if bot is allowed for the message
@@ -75,6 +76,8 @@ exports.botActive = function(bot, message, next) {
                             message.disabledBots = [];
                         }
                     }
+                } else {
+                    console.log(err);
                 }
                 next();
             });
@@ -93,8 +96,10 @@ exports.botActiveSend = function(bot, message, next) {
             MongoStorage.channel.findOne({'id': message.channel}, function(err, channel) {
                 if (!err) {
                     if (channel) {
-                        var enabledForTeam = (team.disabledBots.indexOf(message.botName) === -1);
-                        var enabledForChannel = (channel.disabledBots.indexOf(message.botName) === -1);
+                        var teamDisabledBots = team.disabledBots || [];
+                        var channelDisabledBots = channel.disabledBots || [];
+                        var enabledForTeam = (teamDisabledBots.indexOf(message.botName) === -1);
+                        var enabledForChannel = (channelDisabledBots.indexOf(message.botName) === -1);
                         if (enabledForTeam && enabledForChannel) {
                             next();
                             return;
